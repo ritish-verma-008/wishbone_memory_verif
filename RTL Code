@@ -1,0 +1,99 @@
+// Code your design here
+module wishbone_mem (clk, rst, strb, we, addr, wdata, ack, rdata);
+  
+  input clk, rst; // global sig
+  input strb, we; // control sig 
+  input [7:0] addr; // data sig
+  input [7:0] wdata; // data sig
+  output reg ack; // data sig
+  output reg [7:0] rdata; // data sig
+  
+  reg [7:0] mem [0:255];
+  reg [7:0] temp_addr;
+  reg [7:0] temp_data;
+  
+ enum bit [2:0] {reset, idle, write, w_ack, read, r_ack} state;
+  
+  always@(posedge clk) begin
+    
+    if(rst==1'b1) 
+      
+		state <= reset;
+      
+    else begin
+    
+    ack <= 1'b0;
+    case(state) 
+      
+      reset : begin
+        
+        ack <= 1'b0;
+        rdata <= 8'b00000000;
+        temp_data <= 8'b0;
+        temp_addr <= 8'b0;
+        for(int i = 0; i < 256; i++) begin
+          mem[i] <= 0;
+        end
+        state <= idle;
+     
+      end
+      
+      idle : begin
+        
+        ack <= 1'b0;
+        rdata <= 8'b00000000;
+        
+        if(strb==1'b1 && we==1'b1) begin
+          
+          temp_addr <= addr;
+          temp_data <= wdata;
+          state <= write;
+        
+        end else if (strb==1'b1 && we==1'b0) begin
+          
+          temp_addr <= addr;
+          state <= read;
+        
+          end else 
+          
+          state <= idle;
+        
+      end
+      
+      write : begin
+        
+        mem[temp_addr] <= temp_data;
+        state <= w_ack;
+        
+      end
+      
+      w_ack : begin
+        
+        ack <= 1'b1;
+        state <= idle;
+        
+      end
+      
+      read : begin
+        
+        state <= r_ack;
+        
+      end
+      
+      r_ack : begin
+        
+        ack <= 1'b1;
+        rdata <= mem[temp_addr];
+        state <= idle;
+        
+      end
+    
+      default : state <= idle;
+      
+    endcase
+      
+  end
+  
+  end
+  
+endmodule
